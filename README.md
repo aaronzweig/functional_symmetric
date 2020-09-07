@@ -1,6 +1,8 @@
-# symmetric_mean_field
+# functional_symmetric
 
-Note: the "neuron" and "smooth_neuron" are sampled randomly, and therefore some will be linear when restricted to the input domain.  
+Experiments for "A Functional Perspective on Learning Symmetric Functions with Neural Networks" separating classes of measure-input functions.
+
+Note: the "neuron" and "smooth_neuron" objectives are sampled randomly, and therefore some neurons will be linear when restricted to the input domain.  
 
 ## Cite
 
