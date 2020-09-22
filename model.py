@@ -25,19 +25,20 @@ class Block(nn.Module):
     
 #F1: NN + NN
 class Symmetric(nn.Module):
-    def __init__(self, input_dim, hidden_dim_phi, hidden_dim_rho):
+    def __init__(self, input_dim, hidden_dim_phi, hidden_dim_rho, output_dim = 1):
         super(Symmetric, self).__init__()
         
         self.hidden_dim_phi = hidden_dim_phi
         self.hidden_dim_rho = hidden_dim_rho
-        self.input_dim = input_dim
+        self.input_dim = input_dim + 1 #Explicit bias term to simplify path norm
+        self.output_dim = output_dim
         
         self.rho = None
         self.phi = None
         self.reinit()
     
     def reinit(self):
-        self.rho = Block(self.hidden_dim_phi, self.hidden_dim_rho, 1)
+        self.rho = Block(self.hidden_dim_phi, self.hidden_dim_rho, self.output_dim)
         self.phi = LittleBlock(self.input_dim, self.hidden_dim_phi)
     
     def forward(self, x):        
@@ -59,7 +60,8 @@ class Symmetric(nn.Module):
         W2 = torch.abs(W2)
         w = torch.abs(w)
         
-        reg_loss = torch.matmul(w, torch.matmul(W2, W1)).item()
+        reg_loss = torch.matmul(w, torch.matmul(W2, W1))
+        reg_loss = torch.sum(w).item()
         
         return lamb * reg_loss
     
@@ -78,8 +80,8 @@ class DeepSets(Symmetric):
     
 #F2: K + NN
 class KNN(Symmetric):
-    def __init__(self, input_dim, hidden_dim_phi, hidden_dim_rho):
-        super(KNN, self).__init__(input_dim, hidden_dim_phi, hidden_dim_rho)
+    def __init__(self, input_dim, hidden_dim_phi, hidden_dim_rho, output_dim = 1):
+        super(KNN, self).__init__(input_dim, hidden_dim_phi, hidden_dim_rho, output_dim)
 
     def reinit(self):
         super(KNN, self).reinit()
@@ -96,14 +98,15 @@ class KNN(Symmetric):
         W2 = torch.norm(W2, dim = 1, keepdim = True)
         w = torch.abs(w)
         
-        reg_loss = torch.matmul(w, W2).item()
+        reg_loss = torch.matmul(w, W2)
+        reg_loss = torch.sum(w).item()
         
         return lamb * reg_loss
     
 #F3: K + K
 class KK(KNN):
-    def __init__(self, input_dim, hidden_dim_phi, hidden_dim_rho):
-        super(KK, self).__init__(input_dim, hidden_dim_phi, hidden_dim_rho)
+    def __init__(self, input_dim, hidden_dim_phi, hidden_dim_rho, output_dim = 1):
+        super(KK, self).__init__(input_dim, hidden_dim_phi, hidden_dim_rho, output_dim)
 
     def reinit(self):
         super(KK, self).reinit()
@@ -116,8 +119,9 @@ class KK(KNN):
         reg_loss = 0.
         
         w = self.rho.fc2.weight
+        w = torch.norm(w, dim = 1, keepdim = True)
 
-        reg_loss = torch.norm(w)
+        reg_loss = torch.sum(w).item()
 
         return lamb * reg_loss
     
