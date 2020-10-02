@@ -2,7 +2,7 @@ import numpy as np
 import torch
 
 def generate_narrow_data(N, batch_size, input_dim, objective, bias_first = False):
-    x = np.random.uniform(low = -5, high = 5, size = (batch_size, N, input_dim))
+    x = np.random.uniform(low = -1, high = 1, size = (batch_size, N, input_dim))
     
     bias = np.ones((batch_size, N, 1))
     if not bias_first:
@@ -18,7 +18,7 @@ def generate_narrow_data(N, batch_size, input_dim, objective, bias_first = False
     return (x,y)
 
 def generate_wide_data(N, batch_size, input_dim, objective, bias_first = False):
-    x = np.random.uniform(low = -10, high = 10, size = (batch_size, N, input_dim))
+    x = np.random.uniform(low = -3, high = 3, size = (batch_size, N, input_dim))
     
     bias = np.ones((batch_size, N, 1))
     if not bias_first:
