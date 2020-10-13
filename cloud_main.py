@@ -232,23 +232,24 @@ if __name__ == "__main__":
     parser.add_argument('--model', default='overkill', help='')
 
     parser.add_argument('--run_id', type=int, default=1, help='')
+    parser.add_argument('--train_cloud_size', type=int, default=200, help='')
+    parser.add_argument('--test_cloud_size', type=int, default=200, help='')
 
     args = parser.parse_args()
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    cloud_size = 200
     valid_size = 0.1
     train_dataset = torchvision.datasets.MNIST('data', train=True, download=True,
                                                transform=torchvision.transforms.Compose([
                                                    torchvision.transforms.ToTensor(),
-                                                   PointCloud(cloud_size)
+                                                   PointCloud(args.train_cloud_size)
                                                ]))
 
     test_dataset = torchvision.datasets.MNIST('data', train=False, download=True,
                                                transform=torchvision.transforms.Compose([
                                                    torchvision.transforms.ToTensor(),
-                                                   PointCloud(cloud_size)
+                                                   PointCloud(args.test_cloud_size)
                                                ]))
 
     num_train = len(train_dataset)
@@ -275,16 +276,16 @@ if __name__ == "__main__":
     elif args.model == 's3':
         model = KK(input_dim, args.h1, args.h2, 10).to(device)
             
-        train(model, train_loader, args.iterations, lamb = args.lamb, lr = args.lr)
+    train(model, train_loader, args.iterations, lamb = args.lamb, lr = args.lr)
     
-        print(args)
+    print(args)
             
-        error = test(model, train_loader)
-        print("train error: ", error)
+    error = test(model, train_loader)
+    print("train error: ", error)
 
-        error = test(model, val_loader)
-        print("val error: ", error)
+    error = test(model, val_loader)
+    print("val error: ", error)
             
-        error = test(model, test_loader)
-        print("test error: ", error)
+    error = test(model, test_loader)
+    print("test error: ", error)
     
