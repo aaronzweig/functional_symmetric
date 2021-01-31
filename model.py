@@ -4,12 +4,14 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class LittleBlock(nn.Module):
-    def __init__(self, input_dim, output_dim):
+    def __init__(self, input_dim, output_dim, squared):
         super(LittleBlock, self).__init__()
         self.fc = nn.Linear(input_dim, output_dim, bias = False)
+        self.squared = squared
 
     def forward(self, x):
-        return F.relu(self.fc(x))
+        z = F.relu(self.fc(x))
+        return z ** 2 if self.squared else z
     
 class Block(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim):
@@ -25,13 +27,14 @@ class Block(nn.Module):
     
 #F1: NN + NN
 class Symmetric(nn.Module):
-    def __init__(self, input_dim, hidden_dim_phi, hidden_dim_rho, output_dim = 1):
+    def __init__(self, input_dim, hidden_dim_phi, hidden_dim_rho, output_dim = 1, squared = False):
         super(Symmetric, self).__init__()
         
         self.hidden_dim_phi = hidden_dim_phi
         self.hidden_dim_rho = hidden_dim_rho
         self.input_dim = input_dim + 1 #Explicit bias term to simplify path norm
         self.output_dim = output_dim
+        self.squared = squared
         
         self.rho = None
         self.phi = None
@@ -39,7 +42,7 @@ class Symmetric(nn.Module):
     
     def reinit(self):
         self.rho = Block(self.hidden_dim_phi, self.hidden_dim_rho, self.output_dim)
-        self.phi = LittleBlock(self.input_dim, self.hidden_dim_phi)
+        self.phi = LittleBlock(self.input_dim, self.hidden_dim_phi, self.squared)
     
     def forward(self, x):        
         batch_size, input_set_dim, input_dim = x.shape
@@ -57,6 +60,8 @@ class Symmetric(nn.Module):
         w = self.rho.fc2.weight
         
         W1 = torch.norm(W1, dim = 1, keepdim = True)
+        if  self.squared:
+            W1 = W1 ** 2
         W2 = torch.abs(W2)
         w = torch.abs(w)
         
@@ -80,8 +85,8 @@ class DeepSets(Symmetric):
     
 #F2: K + NN
 class KNN(Symmetric):
-    def __init__(self, input_dim, hidden_dim_phi, hidden_dim_rho, output_dim = 1):
-        super(KNN, self).__init__(input_dim, hidden_dim_phi, hidden_dim_rho, output_dim)
+    def __init__(self, input_dim, hidden_dim_phi, hidden_dim_rho, output_dim = 1, squared = False):
+        super(KNN, self).__init__(input_dim, hidden_dim_phi, hidden_dim_rho, output_dim, squared)
 
     def reinit(self):
         super(KNN, self).reinit()
@@ -105,8 +110,8 @@ class KNN(Symmetric):
     
 #F3: K + K
 class KK(KNN):
-    def __init__(self, input_dim, hidden_dim_phi, hidden_dim_rho, output_dim = 1):
-        super(KK, self).__init__(input_dim, hidden_dim_phi, hidden_dim_rho, output_dim)
+    def __init__(self, input_dim, hidden_dim_phi, hidden_dim_rho, output_dim = 1, squared = False):
+        super(KK, self).__init__(input_dim, hidden_dim_phi, hidden_dim_rho, output_dim, squared)
 
     def reinit(self):
         super(KK, self).reinit()
